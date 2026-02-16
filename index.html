@@ -16,6 +16,7 @@
     <div id="score">分數: 0</div>
     <canvas id="gameCanvas" width="600" height="200"></canvas>
     <p>點擊畫面跳躍，越跑會越快喔！</p>
+
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -23,24 +24,24 @@
 
     // --- 1. 載入圖片並追蹤進度 ---
     let imagesLoaded = 0;
-    const totalImages = 2; // 馬 + 紅包
+    const totalImages = 2; 
 
     const horseImg = new Image();
-    horseImg.src = 'LS20260217032847.png';
+    horseImg.src = 'LS20260217032847.png'; // 確保檔名正確
     horseImg.onload = () => { imagesLoaded++; checkAllLoaded(); };
+    horseImg.onerror = () => { console.log("馬圖片讀取失敗"); imagesLoaded++; checkAllLoaded(); };
 
     const giftImg = new Image();
     giftImg.src = 'redpacket.png';
     giftImg.onload = () => { imagesLoaded++; checkAllLoaded(); };
-
-    // 如果圖片路徑錯了，也要能執行
-    horseImg.onerror = () => { console.log("馬圖片讀取失敗"); imagesLoaded++; checkAllLoaded(); };
     giftImg.onerror = () => { console.log("紅包圖片讀取失敗"); imagesLoaded++; checkAllLoaded(); };
 
     function checkAllLoaded() {
+        // 只有當兩張圖都處理過（無論成功失敗），且遊戲還沒開始時，才啟動
         if (imagesLoaded >= totalImages) {
-            // 圖片都準備好了，才開始跑 loop
-            if (!isGameOver) requestAnimationFrame(loop);
+            if (!isGameOver) {
+                requestAnimationFrame(loop);
+            }
         }
     }
 
@@ -83,7 +84,7 @@
         obstacles = [];
         speed = startSpeed;
         scoreEl.innerText = "分數: 0";
-        loop();
+        requestAnimationFrame(loop); // 重啟時也要呼叫
     }
 
     function loop() {
@@ -91,6 +92,7 @@
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        // 物理計算
         horseDy += gravity;
         horseY += horseDy;
 
@@ -100,7 +102,7 @@
             grounded = true;
         }
 
-        // --- 畫馬：優先畫圖片，真的沒有才畫 Emoji ---
+        // --- 畫馬 ---
         if (horseImg.complete && horseImg.naturalWidth !== 0) {
             ctx.drawImage(horseImg, 50, horseY, 60, 60);
         } else {
@@ -108,6 +110,7 @@
             ctx.fillText("🐎", 50, horseY + 45);
         }
 
+        // 障礙物生成
         timer++;
         if (timer > (1000 / speed)) { 
             obstacles.push({ x: 600, w: 40, h: 40 });
@@ -117,6 +120,7 @@
         for (let i = obstacles.length - 1; i >= 0; i--) {
             obstacles[i].x -= speed;
             
+            // 畫紅包
             if (giftImg.complete && giftImg.naturalWidth !== 0) {
                 ctx.drawImage(giftImg, obstacles[i].x, 155, 40, 40);
             } else {
@@ -124,6 +128,7 @@
                 ctx.fillText("🧧", obstacles[i].x, 185);
             }
 
+            // 碰撞判定
             if (obstacles[i].x < 90 && obstacles[i].x > 30 && horseY > 100) {
                 isGameOver = true;
                 ctx.fillStyle = "rgba(0,0,0,0.5)";
@@ -132,8 +137,10 @@
                 ctx.font = "24px Microsoft JhengHei";
                 ctx.textAlign = "center";
                 ctx.fillText("馬失前蹄！點擊重新開始", 300, 100);
+                return; // 結束這一幀
             }
 
+            // 加分與移除
             if (obstacles[i].x < -40) {
                 obstacles.splice(i, 1);
                 score++;
@@ -144,11 +151,8 @@
 
         requestAnimationFrame(loop);
     }
-
-    
-    </script>
+</script>
 </body>
 </html>
-
 
 
