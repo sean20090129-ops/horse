@@ -2,21 +2,132 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2026 馬年奔騰遊戲</title>
     <style>
-        body { text-align: center; background: #fdf5e6; margin: 0; overflow: hidden; }
-        canvas { background: #fff; border-bottom: 2px solid #d32f2f; margin-top: 50px; }
-        .info { font-family: "Microsoft JhengHei", sans-serif; color: #d32f2f; }
+        body { text-align: center; background: #fdf5e6; margin: 0; padding: 0; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
+        h1 { color: #d32f2f; margin: 5px; }
+        canvas { background: white; border-bottom: 3px solid #d32f2f; display: block; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #score { font-size: 24px; color: #d32f2f; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <div class="info">
-        <h1>🐎 馬年奔騰：追逐紅包 🧧</h1>
-        <p>按【空白鍵】或【點擊螢幕】跳躍</p>
-        <h2 id="score">分數: 0</h2>
-    </div>
-    <canvas id="gameCanvas"></canvas>
-    <script src="script.js"></script>
-</body>
 
+    <h1>🐎 2026 跑跑小馬</h1>
+    <canvas id="gameCanvas" width="600" height="200"></canvas>
+    <div id="score">分數: 0</div>
+    <p>點擊畫面或按空白鍵跳躍</p>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreEl = document.getElementById("score");
+
+        // 遊戲參數
+        let score = 0;
+        let gameSpeed = 5;
+        let isGameOver = false;
+        let obstacles = [];
+        let timer = 0;
+
+        // 主角馬
+        const horse = {
+            x: 50,
+            y: 150,
+            w: 50,
+            h: 50,
+            dy: 0,
+            jumpPower: 12,
+            gravity: 0.6,
+            grounded: false,
+            draw() {
+                ctx.font = "45px Arial";
+                ctx.fillText("🐎", this.x, this.y + 40);
+            },
+            jump() {
+                if (this.grounded) {
+                    this.dy = -this.jumpPower;
+                    this.grounded = false;
+                }
+            },
+            update() {
+                if (this.y + this.h < canvas.height) {
+                    this.dy += this.gravity;
+                    this.grounded = false;
+                } else {
+                    this.dy = 0;
+                    this.grounded = true;
+                    this.y = canvas.height - this.h;
+                }
+                this.y += this.dy;
+                this.draw();
+            }
+        };
+
+        // 障礙物紅包
+        function spawnObstacle() {
+            obstacles.push({
+                x: canvas.width,
+                y: 160,
+                w: 40,
+                h: 40,
+                draw() {
+                    ctx.font = "35px Arial";
+                    ctx.fillText("🧧", this.x, this.y + 30);
+                }
+            });
+        }
+
+        function animate() {
+            if (isGameOver) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            horse.update();
+
+            timer++;
+            if (timer % 100 === 0) spawnObstacle();
+
+            for (let i = 0; i < obstacles.length; i++) {
+                let o = obstacles[i];
+                o.x -= gameSpeed;
+                o.draw();
+
+                // 碰撞判定
+                if (horse.x < o.x + o.w - 10 && horse.x + horse.w - 10 > o.x &&
+                    horse.y < o.y + o.h - 10 && horse.y + horse.h - 10 > o.y) {
+                    isGameOver = true;
+                    ctx.fillStyle = "rgba(0,0,0,0.5)";
+                    ctx.fillRect(0,0,canvas.width, canvas.height);
+                    ctx.fillStyle = "white";
+                    ctx.font = "30px Arial";
+                    ctx.fillText("遊戲結束！點擊重新開始", 150, 100);
+                }
+
+                // 移除與加分
+                if (o.x + o.w < 0) {
+                    obstacles.splice(i, 1);
+                    score++;
+                    scoreEl.innerText = "分數: " + score;
+                    if (score % 5 === 0) gameSpeed += 0.5;
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // 監聽操作
+        function handleInput() {
+            if (isGameOver) {
+                location.reload(); // 簡單暴力的重啟方式
+            } else {
+                horse.jump();
+            }
+        }
+
+        window.addEventListener("keydown", (e) => { if (e.code === "Space") { e.preventDefault(); handleInput(); }});
+        window.addEventListener("mousedown", handleInput);
+        window.addEventListener("touchstart", (e) => { e.preventDefault(); handleInput(); }, {passive: false});
+
+        animate();
+    </script>
+</body>
 </html>
