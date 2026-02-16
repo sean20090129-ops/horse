@@ -18,7 +18,7 @@ const horse = {
     height: 40,
     dy: 0,
     jumpForce: 12,
-    gravity: 0.6,
+    gravity: 0.4,
     grounded: false,
     draw() {
         ctx.fillStyle = ""#fbc02d""; // 這裡之後可以換成 ctx.drawImage(你的馬.png)
@@ -116,4 +116,5 @@ window.addEventListener("touchstart", () => horse.jump());
 
 
 animate();
+
 
