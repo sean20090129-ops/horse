@@ -1,3 +1,18 @@
+canvas.focus(); // 頁面載入後自動聚焦在遊戲
+
+// 修改後的監聽器，增加 console 日誌方便你測試
+document.addEventListener("keydown", (e) => { 
+    if (e.code === "Space") {
+        e.preventDefault(); // 防止網頁捲動
+        horse.jump();
+        console.log("偵測到跳躍動作！"); 
+    }
+});
+
+// 針對手機或滑鼠點擊
+document.addEventListener("mousedown", () => {
+    horse.jump();
+});
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const scoreElement = document.getElementById("score");
@@ -13,12 +28,12 @@ let isGameOver = false;
 // 1. 馬的設定
 const horse = {
     x: 50,
-    y: 150,
-    width: 40,
-    height: 40,
+    y: 140,
+    width: 60,
+    height: 60,
     dy: 0,
-    jumpForce: 12,
-    gravity: 0.4,
+    jumpForce: 15,
+    gravity: 0.8,
     grounded: false,
     draw() {
         ctx.fillStyle = ""#fbc02d""; // 這裡之後可以換成 ctx.drawImage(你的馬.png)
@@ -116,5 +131,6 @@ window.addEventListener("touchstart", () => horse.jump());
 
 
 animate();
+
 
 
