@@ -21,7 +21,7 @@ const horse = {
     gravity: 0.6,
     grounded: false,
     draw() {
-        ctx.fillStyle = "LS20260217032847.png"; // 這裡之後可以換成 ctx.drawImage(你的馬.png)
+        ctx.fillStyle = ""#fbc02d""; // 這裡之後可以換成 ctx.drawImage(你的馬.png)
         ctx.fillRect(this.x, this.y, this.width, this.height);
         ctx.fillText("🐎", this.x, this.y + 30); // 暫時用 Emoji 代替
     },
@@ -116,3 +116,4 @@ window.addEventListener("touchstart", () => horse.jump());
 
 
 animate();
+
