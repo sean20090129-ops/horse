@@ -15,37 +15,49 @@
     <h1>🐎 2026 馬年奔騰</h1>
     <div id="score">分數: 0</div>
     <canvas id="gameCanvas" width="600" height="200"></canvas>
-    <p>點擊畫面跳躍，越跑會越快喔！</p>
+    <p>紅包變小囉！每 10 分會有煙火特效！</p>
 
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     const scoreEl = document.getElementById("score");
 
-    // --- 1. 載入圖片並追蹤進度 ---
     let imagesLoaded = 0;
     const totalImages = 2; 
+    let isLooping = false; // 保險鎖
 
     const horseImg = new Image();
-    horseImg.src = 'LS20260217032847.png'; // 確保檔名正確
+    horseImg.src = 'LS20260217032847.png';
     horseImg.onload = () => { imagesLoaded++; checkAllLoaded(); };
-    horseImg.onerror = () => { console.log("馬圖片讀取失敗"); imagesLoaded++; checkAllLoaded(); };
+    horseImg.onerror = () => { imagesLoaded++; checkAllLoaded(); };
 
     const giftImg = new Image();
     giftImg.src = 'redpacket.png';
     giftImg.onload = () => { imagesLoaded++; checkAllLoaded(); };
-    giftImg.onerror = () => { console.log("紅包圖片讀取失敗"); imagesLoaded++; checkAllLoaded(); };
+    giftImg.onerror = () => { imagesLoaded++; checkAllLoaded(); };
 
     function checkAllLoaded() {
-        // 只有當兩張圖都處理過（無論成功失敗），且遊戲還沒開始時，才啟動
-        if (imagesLoaded >= totalImages) {
-            if (!isGameOver) {
-                requestAnimationFrame(loop);
-            }
+        if (imagesLoaded >= totalImages && !isLooping) {
+            isLooping = true;
+            requestAnimationFrame(loop);
         }
     }
 
-    // --- 2. 遊戲設定 ---
+    // 煙火粒子
+    let particles = [];
+    function createFirework(x, y) {
+        for (let i = 0; i < 30; i++) {
+            particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                life: 40
+            });
+        }
+    }
+
     let score = 0;
     let isGameOver = false;
     let horseY = 140;
@@ -82,13 +94,20 @@
         horseY = 140;
         horseDy = 0;
         obstacles = [];
+        particles = [];
         speed = startSpeed;
         scoreEl.innerText = "分數: 0";
-        requestAnimationFrame(loop); // 重啟時也要呼叫
+        if (!isLooping) {
+            isLooping = true;
+            requestAnimationFrame(loop);
+        }
     }
 
     function loop() {
-        if (isGameOver) return;
+        if (isGameOver) {
+            isLooping = false;
+            return;
+        }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -102,7 +121,7 @@
             grounded = true;
         }
 
-        // --- 畫馬 ---
+        // 畫馬
         if (horseImg.complete && horseImg.naturalWidth !== 0) {
             ctx.drawImage(horseImg, 50, horseY, 60, 60);
         } else {
@@ -113,40 +132,63 @@
         // 障礙物生成
         timer++;
         if (timer > (1000 / speed)) { 
-            obstacles.push({ x: 600, w: 40, h: 40 });
+            // 隨機決定是紅包還是鞭炮
+            const type = Math.random() > 0.3 ? 'gift' : 'firecracker';
+            obstacles.push({ x: 600, w: 30, h: 30, type: type });
             timer = 0;
         }
 
         for (let i = obstacles.length - 1; i >= 0; i--) {
-            obstacles[i].x -= speed;
+            let o = obstacles[i];
+            o.x -= speed;
             
-            // 畫紅包
-            if (giftImg.complete && giftImg.naturalWidth !== 0) {
-                ctx.drawImage(giftImg, obstacles[i].x, 155, 40, 40);
+            // 畫障礙物
+            if (o.type === 'gift') {
+                if (giftImg.complete && giftImg.naturalWidth !== 0) {
+                    ctx.drawImage(giftImg, o.x, 165, 30, 30); // 尺寸縮小到 30
+                } else {
+                    ctx.font = "30px Arial";
+                    ctx.fillText("🧧", o.x, 190);
+                }
             } else {
-                ctx.font = "40px Arial";
-                ctx.fillText("🧧", obstacles[i].x, 185);
+                ctx.font = "30px Arial";
+                ctx.fillText("🧨", o.x, 190);
             }
 
-            // 碰撞判定
-            if (obstacles[i].x < 90 && obstacles[i].x > 30 && horseY > 100) {
+            // 碰撞判定 (配合縮小的障礙物)
+            if (o.x < 85 && o.x > 35 && horseY > 110) {
                 isGameOver = true;
                 ctx.fillStyle = "rgba(0,0,0,0.5)";
                 ctx.fillRect(0,0,600,200);
                 ctx.fillStyle = "white";
                 ctx.font = "24px Microsoft JhengHei";
                 ctx.textAlign = "center";
-                ctx.fillText("馬失前蹄！點擊重新開始", 300, 100);
-                return; // 結束這一幀
+                ctx.fillText("大吉大利，下次努力！點擊重來", 300, 100);
+                return;
             }
 
-            // 加分與移除
-            if (obstacles[i].x < -40) {
+            if (o.x < -40) {
                 obstacles.splice(i, 1);
                 score++;
                 scoreEl.innerText = "分數: " + score;
                 speed += 0.15; 
+
+                // 每到 10 的倍數放煙火
+                if (score > 0 && score % 10 === 0) {
+                    createFirework(300, 100);
+                }
             }
+        }
+
+        // 處理煙火粒子
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, 3, 3);
+            if (p.life <= 0) particles.splice(i, 1);
         }
 
         requestAnimationFrame(loop);
